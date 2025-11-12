@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'add_product.dart';
 
 class MyHomePage extends StatelessWidget {
   MyHomePage({super.key});
@@ -17,6 +18,34 @@ class MyHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Scaffold menyediakan struktur dasar halaman dengan AppBar dan body.
     return Scaffold(
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
+              child: const Text('Football Shop', style: TextStyle(color: Colors.white, fontSize: 20)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () {
+                // Close drawer and go to home (pop to first route)
+                Navigator.of(context).pop();
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text('Add Product'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddProductPage()));
+              },
+            ),
+          ],
+        ),
+      ),
       // AppBar adalah bagian atas halaman yang menampilkan judul.
       appBar: AppBar(
         // Judul aplikasi "Football News" dengan teks putih dan tebal.
@@ -85,6 +114,13 @@ class MyHomePage extends StatelessWidget {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddProductPage()));
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Add Product'),
+      ),
     );
   }
 }
@@ -147,6 +183,11 @@ class ItemCard extends StatelessWidget {
       child: InkWell(
         // Aksi ketika kartu ditekan.
         onTap: () {
+          if (item.name == 'Create Product' || item.name == 'All Products' && false) {
+            // Navigate to add product when Create Product is pressed
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddProductPage()));
+            return;
+          }
           // Menampilkan pesan SnackBar saat kartu ditekan.
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()

@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'menu.dart';
 
 class AddProductPage extends StatefulWidget {
   const AddProductPage({super.key});
@@ -35,44 +40,7 @@ class _AddProductPageState extends State<AddProductPage> {
     super.dispose();
   }
 
-  void _save() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // Prepare display text
-      final name = _nameController.text.trim();
-      final price = double.parse(_priceController.text.trim());
-      final description = _descriptionController.text.trim();
-      final thumbnail = _thumbnailController.text.trim();
-      final category = _category ?? '';
-      final featured = _isFeatured ? 'Yes' : 'No';
-
-      showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Product Saved'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: [
-                Text('Name: $name'),
-                Text(
-                  'Price: Rp${(price.toInt()).toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}',
-                ),
-                Text('Description: $description'),
-                if (thumbnail.isNotEmpty) Text('Thumbnail: $thumbnail'),
-                Text('Category: $category'),
-                Text('Featured: $featured'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
+  // Local display-only save helper removed in favor of server-backed submission
 
   String? _validateNotEmpty(String? v, String fieldName) {
     if (v == null || v.trim().isEmpty) return '$fieldName cannot be empty';
@@ -81,6 +49,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
   @override
   Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Add New Product')),
       body: Padding(
@@ -189,7 +159,56 @@ class _AddProductPageState extends State<AddProductPage> {
 
                 const SizedBox(height: 20),
 
-                ElevatedButton(onPressed: _save, child: const Text('Save')),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (_formKey.currentState?.validate() ?? false) {
+                      // TODO: Replace the URL with your app's URL and don't forget the trailing slash (/).
+                      // For Android emulator use: http://10.0.2.2/
+                      // For web/chrome use: http://localhost:8000/
+
+                      final name = _nameController.text.trim();
+                      final price = int.parse(_priceController.text.trim());
+                      final description = _descriptionController.text.trim();
+                      final thumbnail = _thumbnailController.text.trim();
+                      final category = _category ?? '';
+
+                      final response = await request.postJson(
+                        'http://localhost:8000/create-product-flutter/',
+                        jsonEncode({
+                          'name': name,
+                          'price': price,
+                          'description': description,
+                          'thumbnail': thumbnail,
+                          'category': category,
+                          'is_featured': _isFeatured,
+                        }),
+                      );
+
+                      if (!context.mounted) return;
+
+                      if (response != null && response['status'] == 'success') {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Product successfully saved!'),
+                          ),
+                        );
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => MyHomePage()),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Something went wrong, please try again.',
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
               ],
             ),
           ),
